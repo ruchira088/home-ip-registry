@@ -12,8 +12,13 @@ class PingService(pingDao: PingDao)
 {
   def insert(remoteAddress: RemoteAddress): Future[Ping] =
     pingDao.insert {
-      Ping(uuid(), DateTime.now(), remoteAddress.toString())
+      Ping(uuid(), DateTime.now(), remoteAddress.toIP.fold("UNKNOWN")(_.ip.getHostAddress))
     }
 
   def getLatestIp(): Future[Ping] = pingDao.getLatestPing()
+}
+
+object PingService
+{
+  def apply(pingDao: PingDao): PingService = new PingService(pingDao)
 }

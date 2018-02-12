@@ -4,9 +4,13 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import com.ruchij.contants.{DefaultConfigValues, EnvVariableNames}
+import com.ruchij.dao.{PingDao, SlickPingDao}
 import com.ruchij.routes.IndexRoute
+import com.ruchij.services.PingService
 import com.ruchij.utils.ConfigUtils.env
 import com.ruchij.utils.ScalaUtils.parseInt
+import slick.basic.DatabaseConfig
+import slick.jdbc.SQLiteProfile
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContextExecutor, Promise}
@@ -21,7 +25,19 @@ object App
     implicit val materializer: ActorMaterializer = ActorMaterializer()
     implicit val executionContext: ExecutionContextExecutor = actorSystem.dispatcher
 
-    Http().bindAndHandle(IndexRoute(), serverAddress(), httpPort())
+    val slickPingDao: SlickPingDao = SlickPingDao()
+
+    for {
+      result <- slickPingDao.createTableIfNonExistent()
+
+      _ = println {
+        if (result)
+          s"Created new table named ${SlickPingDao.TABLE_NAME}."
+        else
+          s"${SlickPingDao.TABLE_NAME} already exists in the database."
+      }
+
+      _ = Http().bindAndHandle(IndexRoute(PingService(slickPingDao)), serverAddress(), httpPort())
         .onComplete
         {
           case Success(_) => println(s"Server (${serverAddress()}) is listening on port ${httpPort()}...")
@@ -31,6 +47,8 @@ object App
             System.exit(1)
           }
         }
+    }
+    yield ()
 
     Await.ready(Promise[Unit].future, Duration.Inf)
   }

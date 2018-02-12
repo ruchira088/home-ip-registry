@@ -6,9 +6,9 @@ import com.ruchij.exceptions.EmptyDatabaseException
 import com.ruchij.models.Ping
 import org.joda.time.DateTime
 import slick.ast.BaseTypedType
-import slick.jdbc.{JdbcType, SQLiteProfile}
 import slick.jdbc.SQLiteProfile._
 import slick.jdbc.meta.MTable
+import slick.jdbc.{JdbcType, SQLiteProfile}
 import slick.lifted._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -19,14 +19,8 @@ class SlickPingDao(db: SQLiteProfile.backend.Database)
   import SlickPingDao._
   import api._
 
-  private class PingTable(tag: Tag) extends Table[Ping](tag, TABLE_NAME)
+  class PingTable(tag: Tag) extends Table[Ping](tag, TABLE_NAME)
   {
-    implicit def dateColumn: JdbcType[DateTime] with BaseTypedType[DateTime] =
-      MappedColumnType.base[DateTime, Timestamp] (
-        dateTime => new Timestamp(dateTime.getMillis),
-        timeStamp => new DateTime(timeStamp.getTime)
-      )
-
     def id = column[String]("id", O.PrimaryKey)
     def timeStamp = column[DateTime]("timestamp")
     def ip = column[String]("ip")
@@ -58,5 +52,18 @@ class SlickPingDao(db: SQLiteProfile.backend.Database)
 
 object SlickPingDao
 {
+  import api._
+
   val TABLE_NAME = "ping-table"
+
+  def apply()(implicit executionContext: ExecutionContext): SlickPingDao =
+    new SlickPingDao(sqliteDb())
+
+  def sqliteDb() = SQLiteProfile.backend.Database.forConfig("sqlite")
+
+  implicit def dateColumn: JdbcType[DateTime] with BaseTypedType[DateTime] =
+    MappedColumnType.base[DateTime, Timestamp] (
+      dateTime => new Timestamp(dateTime.getMillis),
+      timeStamp => new DateTime(timeStamp.getTime)
+    )
 }
