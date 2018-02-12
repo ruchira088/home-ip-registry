@@ -6,6 +6,9 @@ services:
     build: .
     ports:
       - 5005:5005
+      - 8000:8000
+    environment:
+      SERVER_ADDRESS: "0.0.0.0"
     volumes:
       - "~/.sbt:/root/.sbt"
       - "~/.ivy2:/root/.ivy2"
