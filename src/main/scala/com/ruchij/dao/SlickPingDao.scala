@@ -35,7 +35,7 @@ class SlickPingDao(db: SQLiteProfile.backend.Database)
     db.run(pings += ping).map(_ => ping)
 
   override def getLatestPing(): Future[Ping] =
-    db.run(pings.sortBy(_.timeStamp).result)
+    db.run(pings.sortBy(_.timeStamp.desc).result)
         .flatMap {
           case pingEntries if pingEntries.nonEmpty => Future.successful(pingEntries.head)
           case _ => Future.failed(EmptyDatabaseException)
