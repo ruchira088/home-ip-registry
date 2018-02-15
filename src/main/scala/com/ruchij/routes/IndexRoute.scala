@@ -1,10 +1,12 @@
 package com.ruchij.routes
 
+import akka.AkkaVersion
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.directives.AuthenticationDirective
 import com.ruchij.exceptions.EmptyDatabaseException
 import com.ruchij.responses.ResponseUtils._
+import com.ruchij.responses.ServiceInformation
 import com.ruchij.services.PingService
 
 object IndexRoute
@@ -13,7 +15,7 @@ object IndexRoute
     handleExceptions(exceptionHandler) {
       path("") {
         get {
-          complete("Hello World")
+          complete(ServiceInformation.fetch())
         }
       } ~
         path("heart-beat") {

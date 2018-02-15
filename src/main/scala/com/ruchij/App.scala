@@ -4,22 +4,22 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
+import akka.{Version, http}
 import com.ruchij.authentication.SimpleAuthenticator
 import com.ruchij.contants.{DefaultConfigValues, EnvVariableNames}
-import com.ruchij.dao.{PingDao, SlickPingDao}
+import com.ruchij.dao.SlickPingDao
 import com.ruchij.exceptions.UndefinedEnvVariableException
+import com.ruchij.responses.ServiceInformation
 import com.ruchij.routes.IndexRoute
 import com.ruchij.services.PingService
 import com.ruchij.utils.ConfigUtils
 import com.ruchij.utils.ConfigUtils.env
 import com.ruchij.utils.ScalaUtils.parseInt
-import slick.basic.DatabaseConfig
-import slick.jdbc.SQLiteProfile
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContextExecutor, Future, Promise}
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Properties, Success, Try}
 
 object App
 {

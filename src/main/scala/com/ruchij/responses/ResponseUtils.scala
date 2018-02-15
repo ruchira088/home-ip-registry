@@ -11,13 +11,16 @@ import scala.util.control.NonFatal
 
 object ResponseUtils
 {
-  private def errorResponse(statusCode: StatusCode, throwable: Throwable): StandardRoute =
+  def jsonResponse(statusCode: StatusCode, jsonString: String) =
     complete {
       HttpResponse(
         status = statusCode,
-        entity = HttpEntity(ContentTypes.`application/json`, s"""{"error": "${throwable.getMessage}"}""")
+        entity = HttpEntity(ContentTypes.`application/json`, jsonString)
       )
     }
+
+  private def errorResponse(statusCode: StatusCode, throwable: Throwable): StandardRoute =
+    jsonResponse(statusCode, s"""{"error": "${throwable.getMessage}"}""")
 
   def exceptionHandler = ExceptionHandler {
     case MissingAuthTokenException => errorResponse(StatusCodes.Unauthorized, MissingAuthTokenException)
