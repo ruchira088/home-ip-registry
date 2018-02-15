@@ -1,12 +1,13 @@
 package com.ruchij.routes
 
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.directives.AuthenticationDirective
 import com.ruchij.responses.ResponseUtils._
 import com.ruchij.services.PingService
 
 object IndexRoute
 {
-  def apply(pingService: PingService) =
+  def apply(pingService: PingService, authentication: AuthenticationDirective[_]) =
     path("") {
       get {
         complete("Hello World")
@@ -14,15 +15,19 @@ object IndexRoute
     } ~
     path("heart-beat") {
       post {
-        extractClientIP {
-          clientIp =>
-            onComplete(pingService.insert(clientIp))(tryResultHandler)
+        authentication { _ =>
+          extractClientIP {
+            clientIp =>
+              onComplete(pingService.insert(clientIp))(tryResultHandler)
+          }
         }
       }
     } ~
     path("home-ip") {
       get {
-        onComplete(pingService.getLatestIp())(tryResultHandler)
+        authentication { _ =>
+          onComplete(pingService.getLatestIp())(tryResultHandler)
+        }
       }
     }
 }

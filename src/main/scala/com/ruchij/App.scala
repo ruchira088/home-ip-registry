@@ -2,20 +2,24 @@ package com.ruchij
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
+import com.ruchij.authentication.SimpleAuthenticator
 import com.ruchij.contants.{DefaultConfigValues, EnvVariableNames}
 import com.ruchij.dao.{PingDao, SlickPingDao}
+import com.ruchij.exceptions.UndefinedEnvVariableException
 import com.ruchij.routes.IndexRoute
 import com.ruchij.services.PingService
+import com.ruchij.utils.ConfigUtils
 import com.ruchij.utils.ConfigUtils.env
 import com.ruchij.utils.ScalaUtils.parseInt
 import slick.basic.DatabaseConfig
 import slick.jdbc.SQLiteProfile
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContextExecutor, Promise}
+import scala.concurrent.{Await, ExecutionContextExecutor, Future, Promise}
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 object App
 {
@@ -27,7 +31,7 @@ object App
 
     val slickPingDao: SlickPingDao = SlickPingDao()
 
-    for {
+    val server = for {
       result <- slickPingDao.createTableIfNonExistent()
 
       _ = println {
@@ -37,18 +41,26 @@ object App
           s"${SlickPingDao.TABLE_NAME} already exists in the database."
       }
 
-      _ = Http().bindAndHandle(IndexRoute(PingService(slickPingDao)), serverAddress(), httpPort())
-        .onComplete
-        {
-          case Success(_) => println(s"Server (${serverAddress()}) is listening on port ${httpPort()}...")
+      authSecret <- Try(ConfigUtils.env(EnvVariableNames.AUTH_SECRET).get)
+        .fold(
+          _ => Future.failed(UndefinedEnvVariableException(EnvVariableNames.AUTH_SECRET)),
+          Future.successful
+        )
 
-          case Failure(NonFatal(throwable)) => {
-            System.err.println(s"ERROR !!! ${throwable.getMessage} ")
-            System.exit(1)
-          }
-        }
+      authenticationDirective = authenticateOAuth2PFAsync(SimpleAuthenticator.REALM, SimpleAuthenticator(authSecret))
+
+      serverBinding <- Http().bindAndHandle(IndexRoute(PingService(slickPingDao), authenticationDirective), serverAddress(), httpPort())
     }
-    yield ()
+    yield serverBinding
+
+    server.onComplete {
+      case Success(_) => println(s"Server (${serverAddress()}) is listening on port ${httpPort()}...")
+
+      case Failure(NonFatal(throwable)) => {
+        System.err.println(s"ERROR !!! ${throwable.getMessage} ")
+        System.exit(1)
+      }
+    }
 
     Await.ready(Promise[Unit].future, Duration.Inf)
   }
