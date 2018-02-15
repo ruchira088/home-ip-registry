@@ -16,7 +16,8 @@ lazy val root = (project in file("."))
       slick,
       slickHikariCp,
       sqliteDriver,
-      slf4jNop,
+      logBack,
+      scalaLogging,
 
       scalaTest % Test,
       pegdown % Test

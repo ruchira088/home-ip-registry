@@ -16,7 +16,9 @@ object Dependencies
   lazy val sqliteDriver = "org.xerial" % "sqlite-jdbc" % "3.21.0.1"
 
   lazy val jodaTime = "joda-time" % "joda-time" % "2.9.9"
-  lazy val slf4jNop = "org.slf4j" % "slf4j-nop" % "1.7.25"
+
+  lazy val logBack = "ch.qos.logback" % "logback-classic" % "1.2.3"
+  lazy val scalaLogging = "com.typesafe.scala-logging" %% "scala-logging" % "3.7.2"
 
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.4"
   lazy val pegdown = "org.pegdown" % "pegdown" % "1.6.0"

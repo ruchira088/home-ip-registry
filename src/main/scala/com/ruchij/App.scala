@@ -4,25 +4,26 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
-import akka.{Version, http}
 import com.ruchij.authentication.SimpleAuthenticator
 import com.ruchij.contants.{DefaultConfigValues, EnvVariableNames}
 import com.ruchij.dao.SlickPingDao
 import com.ruchij.exceptions.UndefinedEnvVariableException
-import com.ruchij.responses.ServiceInformation
 import com.ruchij.routes.IndexRoute
 import com.ruchij.services.PingService
 import com.ruchij.utils.ConfigUtils
 import com.ruchij.utils.ConfigUtils.env
 import com.ruchij.utils.ScalaUtils.parseInt
+import com.typesafe.scalalogging.Logger
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContextExecutor, Future, Promise}
 import scala.util.control.NonFatal
-import scala.util.{Failure, Properties, Success, Try}
+import scala.util.{Failure, Success, Try}
 
 object App
 {
+  val appLogger: Logger = Logger[App]
+
   def main(args: Array[String]): Unit =
   {
     implicit val actorSystem: ActorSystem = ActorSystem("home-ip-registry")
@@ -34,7 +35,7 @@ object App
     val server = for {
       result <- slickPingDao.createTableIfNonExistent()
 
-      _ = println {
+      _ = appLogger.info {
         if (result)
           s"Created new table named ${SlickPingDao.TABLE_NAME}."
         else
@@ -54,10 +55,10 @@ object App
     yield serverBinding
 
     server.onComplete {
-      case Success(_) => println(s"Server (${serverAddress()}) is listening on port ${httpPort()}...")
+      case Success(_) => appLogger.info(s"Server (${serverAddress()}) is listening on port ${httpPort()}...")
 
       case Failure(NonFatal(throwable)) => {
-        System.err.println(s"ERROR !!! ${throwable.getMessage} ")
+        appLogger.error(s"ERROR !!! ${throwable.getMessage} ")
         System.exit(1)
       }
     }
