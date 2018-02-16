@@ -21,11 +21,15 @@ class PingService(pingDao: PingDao)(implicit executionContext: ExecutionContext)
         Ping(uuid(), DateTime.now(), ip(remoteAddress))
       }
       .andThen {
-        case Success(Ping(_, _, ip)) => pingServiceLogger.info(s"Received ping from $ip")
+        case Success(Ping(_, _, ip)) => pingServiceLogger.info(s"Received ping from $ip.")
         case Failure(NonFatal(throwable)) => pingServiceLogger.warn(throwable.getMessage)
       }
 
-  def getLatestIp(): Future[Ping] = pingDao.getLatestPing()
+  def getLatestIp(): Future[Ping] =
+    pingDao.getLatestPing()
+      .andThen {
+        case Success(Ping(_, _, ip)) => pingServiceLogger.info(s"Returned $ip for latest IP.")
+      }
 }
 
 object PingService
