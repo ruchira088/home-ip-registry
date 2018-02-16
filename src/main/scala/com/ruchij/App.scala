@@ -7,6 +7,7 @@ import akka.stream.ActorMaterializer
 import com.ruchij.authentication.SimpleAuthenticator
 import com.ruchij.contants.{DefaultConfigValues, EnvVariableNames}
 import com.ruchij.dao.SlickPingDao
+import com.ruchij.ec.{DefaultMdcPropagatingContext, MdcPropagatingContext}
 import com.ruchij.exceptions.UndefinedEnvVariableException
 import com.ruchij.routes.IndexRoute
 import com.ruchij.services.PingService
@@ -16,19 +17,19 @@ import com.ruchij.utils.ScalaUtils.parseInt
 import com.typesafe.scalalogging.Logger
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContextExecutor, Future, Promise}
+import scala.concurrent.{Await, Future, Promise}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 object App
 {
-  val appLogger: Logger = Logger[App]
+  val appLogger: Logger = Logger("MainApp")
 
   def main(args: Array[String]): Unit =
   {
     implicit val actorSystem: ActorSystem = ActorSystem("home-ip-registry")
     implicit val materializer: ActorMaterializer = ActorMaterializer()
-    implicit val executionContext: ExecutionContextExecutor = actorSystem.dispatcher
+    implicit val executionContext: MdcPropagatingContext = DefaultMdcPropagatingContext(actorSystem.dispatcher)
 
     val slickPingDao: SlickPingDao = SlickPingDao()
 
@@ -50,7 +51,11 @@ object App
 
       authenticationDirective = authenticateOAuth2PFAsync(SimpleAuthenticator.REALM, SimpleAuthenticator(authSecret))
 
-      serverBinding <- Http().bindAndHandle(IndexRoute(PingService(slickPingDao), authenticationDirective), serverAddress(), httpPort())
+      serverBinding <- Http().bindAndHandle(
+        IndexRoute(PingService(slickPingDao),
+          authenticationDirective
+        ), serverAddress(), httpPort()
+      )
     }
     yield serverBinding
 
